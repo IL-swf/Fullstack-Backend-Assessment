@@ -1,10 +1,12 @@
 package com.il.librarybackend;
 
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/books")
@@ -25,19 +27,35 @@ public class BookController {
 
     @PostMapping
     public Book postNewBook(@RequestBody Book book) {
-        return repository.save(book);
+        if (book.getTitle() ==  null) throw new IllegalArgumentException("That isn't a valid book.");
+        if (book.getTitle().equals("")) throw new IllegalArgumentException("Every book needs a title.");
+
+        try {
+            return repository.save(book);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("That isn't a valid book.");
+        }
     }
 
     @GetMapping("/{id}")
     public Book getBookById(@PathVariable Long id) {
-        if (repository.findById(id).isPresent()) {
-            return repository.findById(id).get();
-        } else throw new NoSuchElementException("That book isn't in the database");
+        try {
+            if (repository.findById(id).isPresent()) return repository.findById(id).get();
+            else throw new NoSuchElementException("That book isn't in the database.");
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("That isn't a valid book id.");
+        }
     }
 
     @DeleteMapping("/{id}")
     public String deleteBookById(@PathVariable Long id) {
-        repository.deleteById(id);
+
+        try {
+            repository.deleteById(id);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("That isn't a valid book id.");
+        }
+
         return String.format("Book %d deleted from database", id);
     }
 
@@ -46,10 +64,12 @@ public class BookController {
 
         Book updatedBook;
 
-        if (repository.findById(id).isPresent()) {
-            updatedBook = repository.findById(id).get();
-        } else throw new NoSuchElementException("That book isn't in the database");
-
+        try {
+            if (repository.findById(id).isPresent()) updatedBook = repository.findById(id).get();
+            else throw new NoSuchElementException("That book isn't in the database.");
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("That isn't a valid book id.");
+        }
 
         updates.forEach((key, value) -> {
             switch (key) {
